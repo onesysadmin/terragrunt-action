@@ -32,8 +32,8 @@ inputs:
     description: "working-directory for github step to run terragrunt/terraform command"
     required: false
     default: "."
-  terragrunt-command:
-    description: "terragrunt execution line. For multiple commands use | syntax"
+  commands:
+    description: "terraform execution line. For multiple commands use | multi line syntax"
     required: true
   use-aws-auth:
     description: "Toggle to log in to aws"
@@ -45,7 +45,8 @@ inputs:
     default: "eu-central-1"
   aws-role-to-assume:
     description: "AWS IAM Role for github action to access aws api"
-    required: true
+    required: false
+    default: ""
   aws-role-duration-seconds:
     description: "AWS session time"
     required: false
@@ -94,6 +95,10 @@ inputs:
   github-token:
     description: 'Github token to use for getting latest release'
     required: false
+  use-automatic-binary-detection:
+    description: 'This action automatically detects which binary (terraform XOR terragrunt) to use. It does this by checking if terragrunt.hcl is present. If you set this to false terraform will be used'
+    required: false
+    default: "true"
 
 runs:
   using: "composite"
@@ -148,19 +153,23 @@ runs:
     - name: Run Terraform
       shell: bash
       working-directory: ${{ inputs.terragrunt-working-directory }}
-      run: ${{ inputs.terragrunt-command }}
+      run: ${{ inputs.commands }}
     - name: Convert terraform plan files to json
       if: inputs.enable-terraform-change-pr-commenter == 'true'
+      env:
+        INPUT_TERRAFORM_PLAN_FILENAME: ${{ inputs.terraform-plan-filename }}
+        INPUT_USE_AUTOMATIC_BINARY_DETECTION: ${{ inputs.use-automatic-binary-detection }}
+        INPUT_ENABLE_DEBUG: ${{ inputs.enable-debug }}
       shell: bash
       id: tf-planfiles
       run: |
         echo "::group::convert terraform plan files to json"
         [[ "$ACT" == "true" ]] && apt-get update && apt-get install parallel -y # on act runner parallel is missing
         set -e
-        [[ "${{ inputs.enable-debug == 'true' }}" == "true" ]] && set -x
+        [[ "${INPUT_ENABLE_DEBUG}" == "true" ]] && set -x
         planfiles_json=()
         tf_convert_plan_to_json(){
-          [[ "${{ inputs.enable-debug == 'true' }}" == "true" ]] && set -x
+          [[ "${INPUT_ENABLE_DEBUG}" == "true" ]] && set -x
           exec 3>&1
           exec 1>&2
           set -e
@@ -170,13 +179,13 @@ runs:
           terraform_bin="terraform"
           tfplan_json=$(readlink -f "${planfile_path}/tfplan.json")
           cd "${planfile_path}"
-          test -s terragrunt.hcl && terraform_bin="terragrunt" || true
+          [[ "${INPUT_USE_AUTOMATIC_BINARY_DETECTION}" == "true" ]] && test -s terragrunt.hcl && terraform_bin="terragrunt" || true
           $terraform_bin show -no-color -json "${planfile_name}" > "${tfplan_json}"
           echo ${tfplan_json} >&3
           cd - &>/dev/null
         };
         export -f tf_convert_plan_to_json
-        mapfile -t planfiles_json < <( find . -type f -name ${{ inputs.terraform-plan-filename }} | parallel 'tf_convert_plan_to_json {}' )
+        mapfile -t planfiles_json < <( find . -type f -name ${INPUT_TERRAFORM_PLAN_FILENAME} | parallel 'tf_convert_plan_to_json {}' )
         content=$(printf "%s\n" "${planfiles_json[@]}")
         if [[ -n "${content}" ]]; then
           delimiter="$(openssl rand -hex 8)"

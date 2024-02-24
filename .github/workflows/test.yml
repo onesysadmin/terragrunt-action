@@ -11,7 +11,7 @@ defaults:
 # Use ENV vars to configure parameters for steps
 env:
   TERRAFORM_VERSION: 1.7.4
-  TERRAGRUNT_VERSION: 0.45.11
+  TERRAGRUNT_VERSION: 0.50.6
 
 permissions:
   id-token: write
@@ -21,7 +21,7 @@ permissions:
 jobs:
   test-terraform-pr-comment:
     name: TF code in examples/test-pr-comment
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: ./
@@ -34,14 +34,14 @@ jobs:
           use-ssh-agent: false
           enable-terraform-change-pr-commenter: true
           terraform-plan-filename: terraform.tfplan
-          terragrunt-command: |
+          commands: |
             terraform init
             terraform providers lock
             terraform plan -out terraform.tfplan # we need to make sure
           enable-debug: true # for prod use false here
   test-terragrunt-pr-comment:
     name: TF code in examples/test-pr-comment-terragrunt
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: ./
@@ -56,14 +56,14 @@ jobs:
           use-ssh-agent: false
           enable-terraform-change-pr-commenter: true
           terraform-plan-filename: terraform.tfplan
-          terragrunt-command: |
+          commands: |
             terragrunt run-all init
             terragrunt run-all providers lock
             terragrunt run-all plan
           enable-debug: true # for prod use false here
   test-terragrunt-pr-comment-no-plan:
     name: TF code in examples/test-pr-comment-terragrunt-no-plan
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: ./
@@ -77,14 +77,14 @@ jobs:
           use-ssh-agent: false
           enable-terraform-change-pr-commenter: true
           terraform-plan-filename: terraform.tfplan
-          terragrunt-command: |
+          commands: |
             terragrunt run-all init
             terragrunt run-all providers lock
             terragrunt run-all plan
           enable-debug: true # for prod use false here
   test-terragrunt-pr-comment-no-change:
     name: TF code in examples/test-pr-comment-terragrunt-no-change
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: ./
@@ -97,14 +97,14 @@ jobs:
           use-ssh-agent: false
           enable-terraform-change-pr-commenter: true
           terraform-plan-filename: terraform.tfplan
-          terragrunt-command: |
+          commands: |
             terragrunt run-all init
             terragrunt run-all providers lock
             terragrunt run-all plan
           enable-debug: true # for prod use false here
   test-terragrunt-pr-comment-with-no-summary:
     name: TF code in examples/test-pr-comment-terragrunt-with-no-summary
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: ./
@@ -119,8 +119,29 @@ jobs:
           enable-terraform-change-pr-commenter: true
           include-plan-job-summary: false
           terraform-plan-filename: terraform.tfplan
-          terragrunt-command: |
+          commands: |
             terragrunt run-all init
             terragrunt run-all providers lock
             terragrunt run-all plan
+          enable-debug: true # for prod use false here
+  test-terraform-pr-comment-with-binary-detection-override:
+    name: TF code in examples/test-pr-comment-with-binary-detection-override
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          terraform-version: ${{ env.TERRAFORM_VERSION }}
+          use-aws-auth: false
+          terragrunt-working-directory: examples/test-pr-comment-with-binary-detection-override
+          skip-caches: true
+          use-ssh-agent: false
+          enable-terraform-change-pr-commenter: true
+          terraform-plan-filename: terraform.tfplan
+          use-automatic-binary-detection: false
+          commands: |
+            terraform init
+            terraform providers lock
+            terraform plan -out terraform.tfplan # we need to make sure
           enable-debug: true # for prod use false here

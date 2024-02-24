@@ -1,3 +1,77 @@
+## v1.1.1 (2024-02-23)
+
+### Fix
+
+- make aws auth optional
+
+## v1 (2024-02-19)
+
+## v1.1.0 (2024-02-19)
+
+### Feat
+
+- upgrade dependency to nodejs20
+
+## v1.0.0 (2024-02-09)
+
+### BREAKING CHANGE
+
+- `terragrunt-command` is renamed to `commands`
+- removed parameter `terragrunt-download-cache-target` which is
+replaced by `terragrunt-download`
+
+### Feat
+
+- renamed parameter for commands
+
+## v0 (2024-02-09)
+
+### Feat
+
+- upgrade nodejs actions
+
+## v0.12.0 (2024-02-09)
+
+### Feat
+
+- upgrade nodejs actions
+
+## v0.11.3 (2024-02-05)
+
+### Fix
+
+- nodejs update
+
+## v0.11.2 (2024-02-02)
+
+### Fix
+
+- nodejs update
+
+## v0 (2024-01-29)
+
+### Fix
+
+- upgrade action versions
+
+## v0.11.1 (2024-01-29)
+
+### Fix
+
+- upgrade action versions
+
+## v0.11.0 (2024-01-10)
+
+### Feat
+
+- add toggle to disable automatic binary detection (#23)
+
+## v0.10.3 (2023-08-24)
+
+### Fix
+
+- version upgrades
+
 ## v0.10.2 (2023-03-14)
 
 ### Fix
