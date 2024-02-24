@@ -100,16 +100,16 @@ runs:
   steps:
     # Setup terraform
     - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v2
+      uses: hashicorp/setup-terraform@v3
       if: inputs.terraform-version != 'disabled'
       with:
         terraform_version: ${{ inputs.terraform-version }}
         terraform_wrapper: false
     - name: Terragrunt Binary Installer Action
-      uses: autero1/action-terragrunt@v1.3.0
+      uses: autero1/action-terragrunt@v3
       if: inputs.terragrunt-version != 'disabled'
       with:
-        terragrunt_version: ${{ inputs.terragrunt-version }}
+        terragrunt-version: ${{ inputs.terragrunt-version }}
         token: ${{ inputs.github-token}}
     - name: Config caches
       shell: bash
@@ -119,15 +119,15 @@ runs:
         mkdir --parents $TF_PLUGIN_CACHE_DIR
     - name: Cache Terraform Plugin Cache
       if: inputs.skip-caches == 'false'
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.terraform.d/plugin-cache
         key: ${{ runner.os }}-terraform-${{ hashFiles('**/.terraform.lock.hcl') }}
     - id: "gcloud-auth"
       if: inputs.use-gcloud-auth == 'true'
-      name: "Authenticate to GCP"
-      uses: "google-github-actions/auth@v1"
+      name: Authenticate to GCP
+      uses: google-github-actions/auth@v2
       with:
         project_id: ${{ inputs.gcp-project-id }}
         workload_identity_provider: ${{ inputs.gcp-workload-identity-provider }}
@@ -142,7 +142,7 @@ runs:
         role-duration-seconds: ${{ inputs.aws-role-duration-seconds }}
     - name: Setup SSH agent
       if: inputs.use-ssh-agent == 'true'
-      uses: webfactory/ssh-agent@v0.7.0
+      uses: webfactory/ssh-agent@v0.9.0
       with:
         ssh-private-key: ${{ inputs.ssh-private-key }}
     - name: Run Terraform
@@ -187,7 +187,7 @@ runs:
         echo "::endgroup::"
     - name: Add PR comment for terraform plan changes
       if: inputs.enable-terraform-change-pr-commenter == 'true' && endsWith( steps.tf-planfiles.outputs.terraform_planfiles_json , '.json' )
-      uses: liatrio/terraform-change-pr-commenter@v1.4.1
+      uses: liatrio/terraform-change-pr-commenter@v1.4.5
       continue-on-error: true
       with:
         include-plan-job-summary: ${{ inputs.include-plan-job-summary }}
