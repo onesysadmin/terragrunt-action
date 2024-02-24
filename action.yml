@@ -115,7 +115,7 @@ runs:
         terraform_version: ${{ inputs.terraform-version }}
         terraform_wrapper: false
     - name: Terragrunt Binary Installer Action
-      uses: autero1/action-terragrunt@v3.0.1
+      uses: autero1/action-terragrunt@v3
       if: inputs.terragrunt-version != 'disabled'
       with:
         terragrunt-version: ${{ inputs.terragrunt-version }}
@@ -151,8 +151,8 @@ runs:
         key: ${{ runner.os }}-${{ env.TERRAGRUNT_DOWNLOAD }}-${{ hashFiles('**/project.hcl', '**/.terraform.lock.hcl') }}
     - id: "gcloud-auth"
       if: inputs.use-gcloud-auth == 'true'
-      name: "Authenticate to GCP"
-      uses: "google-github-actions/auth@v2"
+      name: Authenticate to GCP
+      uses: google-github-actions/auth@v2
       with:
         project_id: ${{ inputs.gcp-project-id }}
         workload_identity_provider: ${{ inputs.gcp-workload-identity-provider }}
