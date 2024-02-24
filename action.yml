@@ -185,7 +185,7 @@ runs:
           cd - &>/dev/null
         };
         export -f tf_convert_plan_to_json
-        mapfile -t planfiles_json < <( find . -type f -name ${INPUT_TERRAFORM_PLAN_FILENAME} | parallel 'tf_convert_plan_to_json {}' )
+        mapfile -t planfiles_json < <( find . -maxdepth 2 -type f -name ${INPUT_TERRAFORM_PLAN_FILENAME} | parallel 'tf_convert_plan_to_json {}' )
         content=$(printf "%s\n" "${planfiles_json[@]}")
         if [[ -n "${content}" ]]; then
           delimiter="$(openssl rand -hex 8)"
