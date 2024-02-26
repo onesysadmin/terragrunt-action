@@ -176,8 +176,10 @@ runs:
           exec 1>&2
           set -e
           local planfile=$1
-          planfile_name=$(echo ${planfile##*/})
+          planfile_name=$(basename $planfile})
           planfile_path=$(dirname $planfile)
+          # remove terragrunt-cache from path
+          plafile_path=${planfile_path%/.terragrunt-cache/*}
           terraform_bin="terraform"
           tfplan_json=$(readlink -f "${planfile_path}/tfplan.json")
           cd "${planfile_path}"
@@ -187,7 +189,7 @@ runs:
           cd - &>/dev/null
         };
         export -f tf_convert_plan_to_json
-        mapfile -t planfiles_json < <( find . -maxdepth 2 -type f -name ${INPUT_TERRAFORM_PLAN_FILENAME} | parallel 'tf_convert_plan_to_json {}' )
+        mapfile -t planfiles_json < <( find . -type f -name ${INPUT_TERRAFORM_PLAN_FILENAME} | parallel 'tf_convert_plan_to_json {}' )
         content=$(printf "%s\n" "${planfiles_json[@]}")
         if [[ -n "${content}" ]]; then
           delimiter="$(openssl rand -hex 8)"
