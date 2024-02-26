@@ -176,10 +176,10 @@ runs:
           exec 1>&2
           set -e
           local planfile=$1
-          planfile_name=$(basename $planfile})
+          planfile_name=$(basename $planfile)
           planfile_path=$(dirname $planfile)
           # remove terragrunt-cache from path
-          plafile_path=${planfile_path%/.terragrunt-cache/*}
+          planfile_path=${planfile_path%/.terragrunt-cache/*}
           terraform_bin="terraform"
           tfplan_json=$(readlink -f "${planfile_path}/tfplan.json")
           cd "${planfile_path}"
