@@ -153,6 +153,8 @@ runs:
     - name: Run Terraform
       shell: bash
       working-directory: ${{ inputs.terragrunt-working-directory }}
+      env:
+        INPUT_TERRAFORM_PLAN_FILENAME: ${{ inputs.terraform-plan-filename }}
       run: ${{ inputs.commands }}
     - name: Convert terraform plan files to json
       if: inputs.enable-terraform-change-pr-commenter == 'true'
