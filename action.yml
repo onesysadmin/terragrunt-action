@@ -116,19 +116,62 @@ runs:
       with:
         terragrunt-version: ${{ inputs.terragrunt-version }}
         token: ${{ inputs.github-token}}
-    - name: Config caches
+    - name: Compute terraform plugin cache scope (by lockfile hash)
+      id: plugin-scope
+      if: inputs.skip-caches == 'false'
       shell: bash
       run: |
-        TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
+        # Scope hashFiles to working-directory to ensure each stack has independent cache.
+        # Prevents cache bloat from accumulating old provider versions across lock changes.
+        workdir="${{ inputs.terragrunt-working-directory }}"
+        workdir="${workdir%/}"
+        if [[ "$workdir" == "." || -z "$workdir" ]]; then
+          LOCK_HASH="${{ hashFiles('**/.terraform.lock.hcl', '**/versions.tf') }}"
+        else
+          LOCK_HASH="${{ hashFiles(format('{0}/**/.terraform.lock.hcl', inputs.terragrunt-working-directory), format('{0}/**/versions.tf', inputs.terragrunt-working-directory)) }}"
+        fi
+        [[ -z "$LOCK_HASH" ]] && LOCK_HASH="no-lock"
+        echo "lock_hash=$LOCK_HASH" >> "$GITHUB_OUTPUT"
+    - name: Config caches
+      id: config-caches
+      shell: bash
+      env:
+        INPUT_TERRAGRUNT_DOWNLOAD: "$HOME/.terragrunt-cache/"
+      run: |
+        TF_PLUGIN_CACHE_BASE="$HOME/.terraform.d/plugin-cache"
+        # Scope plugin cache dir to lockfile hash to avoid accumulating old provider versions
+        TF_PLUGIN_CACHE_DIR="$TF_PLUGIN_CACHE_BASE/${{ steps.plugin-scope.outputs.lock_hash }}"
         echo "TF_PLUGIN_CACHE_DIR=$TF_PLUGIN_CACHE_DIR" >> $GITHUB_ENV
-        mkdir --parents $TF_PLUGIN_CACHE_DIR
+        mkdir --parents "$TF_PLUGIN_CACHE_DIR"
+        TG_DOWNLOAD_DIR=${INPUT_TERRAGRUNT_DOWNLOAD//\$HOME/$HOME}
+        echo "TG_DOWNLOAD_DIR=$TG_DOWNLOAD_DIR" >> $GITHUB_ENV
+        mkdir --parents "$TG_DOWNLOAD_DIR"
+        # Terragrunt provider cache (scoped under TG download dir)
+        TG_PROVIDER_CACHE_DIR="${TG_DOWNLOAD_DIR}/terragrunt/providers/"
+        echo "TG_PROVIDER_CACHE_DIR=$TG_PROVIDER_CACHE_DIR" >> $GITHUB_ENV
+        mkdir --parents "$TG_PROVIDER_CACHE_DIR"
     - name: Cache Terraform Plugin Cache
+      if: inputs.skip-caches == 'false' && steps.plugin-scope.outputs.lock_hash != 'no-lock'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ env.TF_PLUGIN_CACHE_DIR }}
+        key: ${{ runner.os }}-terraform-${{ steps.plugin-scope.outputs.lock_hash }}
+    - name: Cache Terragrunt caches
       if: inputs.skip-caches == 'false'
       uses: actions/cache@v4
       with:
         path: |
-          ~/.terraform.d/plugin-cache
-        key: ${{ runner.os }}-terraform-${{ hashFiles('**/.terraform.lock.hcl') }}
+          ${{ env.TG_DOWNLOAD_DIR }}
+        key: ${{ runner.os }}-${{ env.TG_DOWNLOAD_DIR }}-${{ hashFiles('**/terragrunt.hcl', '**/.terraform.lock.hcl', '**/versions.tf') }}
+    - name: Cache Terragrunt provider cache
+      if: inputs.skip-caches == 'false'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ env.TG_PROVIDER_CACHE_DIR }}
+        # Exact-match key only — no restore-keys — to prevent stale providers from being restored
+        key: ${{ runner.os }}-tg-providers-${{ inputs.terragrunt-working-directory }}-${{ steps.plugin-scope.outputs.lock_hash }}
     - id: "gcloud-auth"
       if: inputs.use-gcloud-auth == 'true'
       name: Authenticate to GCP
